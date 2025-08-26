@@ -1,13 +1,35 @@
 import { Component } from '@angular/core';
-import { ProductListComponent } from './components/product-list/product-list.component';
+
 import { CommonModule } from '@angular/common';
+
+import { DbService } from './services/db.service';
+import { SyncService } from './services/sync.service';
+import { ConnectionService } from './services/connection.service';
+import { TodoListComponent } from './components/todo-list/todo-list/todo-list.component';
 
 @Component({
   selector: 'app-root',
-  imports: [ProductListComponent, CommonModule],
+  imports: [CommonModule, TodoListComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'supabase-test';
+  isOnline = true;
+
+  constructor(
+    private dbService: DbService,
+    private syncService: SyncService,
+    private connectionService: ConnectionService
+  ) {}
+
+  ngOnInit() {
+    this.connectionService.isOnline$.subscribe(online => {
+      this.isOnline = online;
+    });
+  }
+
+  forceSync() {
+    this.syncService.forceSync();
+  }
+
 }
