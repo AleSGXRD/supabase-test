@@ -59,17 +59,40 @@ export class SyncService {
       const unsyncedTodos = await this.dbService.todos
         .filter(todo => todo.synced === false)
         .toArray();
+      const syncedTodos = await this.dbService.todos
+        .filter(todo => todo.synced === true)
+        .toArray();
+      console.log("UnsyncedTodos", unsyncedTodos)
+      console.log("SyncedTodos", syncedTodos)
+      const supabaseTodos = await this.supabaseService.getTodos();
+      console.log("Supabase todos", supabaseTodos)
 
       // 2. Sincronizar cada todo no sincronizado
       for (const localTodo of unsyncedTodos) {
         try {
-          if (localTodo.id) {
-            // Si ya existe un ID, es una actualización
-            await this.supabaseService.updateTodo(
-              localTodo.id,
-              this.localToSupabase(localTodo)
-            );
-          } else {
+          if (localTodo.id){
+            const existsSupabaseTodo = supabaseTodos.find(todo => todo.id == localTodo.id)
+            if (existsSupabaseTodo) {
+              // Si ya existe un ID, es una actualización
+              await this.supabaseService.updateTodo(
+                localTodo.id,
+                this.localToSupabase(localTodo)
+              );
+            }
+            else{
+              // Si no tiene ID, es un nuevo todo
+              const supabaseTodo = await this.supabaseService.createTodo(
+                this.localToSupabase(localTodo)
+              );
+
+              // Actualizar el todo local con el ID de Supabase
+              await this.dbService.todos.update(localTodo.id!, {
+                id: supabaseTodo.id,
+                synced: true,
+                updatedAt: new Date()
+              });
+            }
+          }else {
             // Si no tiene ID, es un nuevo todo
             const supabaseTodo = await this.supabaseService.createTodo(
               this.localToSupabase(localTodo)
@@ -88,7 +111,6 @@ export class SyncService {
       }
 
       // 3. Obtener todos de Supabase y actualizar local
-      const supabaseTodos = await this.supabaseService.getTodos();
       for (const supabaseTodo of supabaseTodos) {
         const existingTodo = await this.dbService.todos
           .where('id')

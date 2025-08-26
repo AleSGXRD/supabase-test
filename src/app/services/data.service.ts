@@ -36,12 +36,13 @@ export class DataService {
   async createTodo(todoData: Omit<Todo, 'id' | 'synced' | 'createdAt' | 'updatedAt'>): Promise<Todo> {
     const newTodo: Omit<Todo, 'id'> = {
       ...todoData,
-      synced: this.connectionService.isOnline,
+      synced: false,
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
     const id = await this.dbService.todos.add(newTodo as Todo);
+    console.log("id", id)
     const createdTodo = await this.dbService.todos.get(id);
 
     // Si está online, intentar sincronizar
