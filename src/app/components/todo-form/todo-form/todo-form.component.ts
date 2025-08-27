@@ -1,7 +1,7 @@
 import { Component, Output, EventEmitter } from '@angular/core';
-import { DataService } from '../../../services/data.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { TodoManagerService } from '../../../services/api/manager/todo-manager.service';
 
 @Component({
   imports:[CommonModule, ReactiveFormsModule, FormsModule],
@@ -54,14 +54,14 @@ export class TodoFormComponent {
   @Output() todoAdded = new EventEmitter<void>();
   newTodoTitle = '';
 
-  constructor(private dataService: DataService) {}
+  constructor(private todoManagerService: TodoManagerService) {}
 
   async addTodo() {
     if (!this.newTodoTitle.trim()) return;
 
     try {
-      await this.dataService.createTodo({
-        title: this.newTodoTitle.trim(),
+      await this.todoManagerService.create({
+        title : this.newTodoTitle.trim(),
         completed: false
       });
 

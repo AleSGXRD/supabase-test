@@ -6,8 +6,7 @@ import { map, startWith } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class ConnectionService {
-  private isOnlineSubject = new BehaviorSubject<boolean>(navigator.onLine);
-  public isOnline$ = this.isOnlineSubject.asObservable();
+  public isOnline$ = new BehaviorSubject<boolean>(navigator.onLine);
 
   constructor() {
     this.setupConnectionMonitoring();
@@ -20,12 +19,9 @@ export class ConnectionService {
       fromEvent(window, 'offline').pipe(map(() => false)),
       of(navigator.onLine)
     ).subscribe((isOnline) => {
-      this.isOnlineSubject.next(isOnline);
+      this.isOnline$.next(isOnline);
+      console.log(this.isOnline$.value)
       console.log('Estado de conexión:', isOnline ? 'Online' : 'Offline');
     });
-  }
-
-  public get isOnline(): boolean {
-    return this.isOnlineSubject.value;
   }
 }

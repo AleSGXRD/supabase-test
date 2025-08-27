@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { DataService } from '../../../services/data.service';
 import { Todo } from '../../../services/db.service';
 import { CommonModule } from '@angular/common';
+import { TodoManagerService } from '../../../services/api/manager/todo-manager.service';
 
 @Component({
   imports:[CommonModule],
@@ -100,11 +100,11 @@ export class TodoItemComponent {
   @Output() todoUpdated = new EventEmitter<void>();
   @Output() todoDeleted = new EventEmitter<void>();
 
-  constructor(private dataService: DataService) {}
+  constructor(private todoManagerService: TodoManagerService) {}
 
   async toggleCompleted() {
     try {
-      await this.dataService.updateTodo(this.todo.id!, {
+      await this.todoManagerService.update(this.todo.id!, {
         completed: !this.todo.completed
       });
       this.todoUpdated.emit();
@@ -117,7 +117,7 @@ export class TodoItemComponent {
   async deleteTodo() {
     if (confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
       try {
-        await this.dataService.deleteTodo(this.todo.id!);
+        await this.todoManagerService.delete(this.todo.id!);
         this.todoDeleted.emit();
       } catch (error) {
         console.error('Error deleting todo:', error);

@@ -8,6 +8,7 @@ export interface Todo {
   synced?: boolean;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt?: Date;
 }
 
 @Injectable({
@@ -20,11 +21,11 @@ export class DbService extends Dexie {
     super('OfflineAppDB');
 
     this.version(1).stores({
-      todos: '++id, title, completed, synced, createdAt, updatedAt'
+      todos: '++id, title, completed, synced, createdAt, updatedAt, deletedAt'
     });
 
     this.version(2).stores({
-      todos: '++id, title, completed, synced, createdAt, updatedAt'
+      todos: '++id, title, completed, synced, createdAt, updatedAt, deletedAt'
     }).upgrade(trans => {
       return trans.table('todos').toCollection().modify(todo => {
         todo.synced = todo.synced || false;

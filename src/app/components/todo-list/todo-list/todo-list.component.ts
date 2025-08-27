@@ -1,12 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { DataService } from '../../../services/data.service';
 import { ConnectionService } from '../../../services/connection.service';
-import { SyncService } from '../../../services/sync.service';
 import { Todo } from '../../../services/db.service';
 import { CommonModule } from '@angular/common';
 import { TodoFormComponent } from '../../todo-form/todo-form/todo-form.component';
 import { TodoItemComponent } from '../../todo-item/todo-item/todo-item.component';
+import { TodoManagerService } from '../../../services/api/manager/todo-manager.service';
 
 @Component({
   imports:[CommonModule, TodoFormComponent, TodoItemComponent],
@@ -102,9 +101,8 @@ export class TodoListComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
 
   constructor(
-    private dataService: DataService,
+    private todoManagerService:TodoManagerService,
     private connectionService: ConnectionService,
-    private syncService: SyncService
   ) {}
 
   ngOnInit() {
@@ -121,10 +119,11 @@ export class TodoListComponent implements OnInit, OnDestroy {
   }
 
   async loadTodos() {
-    try {
-      this.dataService.getTodos().subscribe(todos => {
-        this.todos = todos;
-      });
+    try{
+      const todos = await this.todoManagerService.getAll();
+
+      if(todos)
+        this.todos = todos
     } catch (error) {
       console.error('Error loading todos:', error);
     }
@@ -132,7 +131,7 @@ export class TodoListComponent implements OnInit, OnDestroy {
 
   async forceSync() {
     if (this.isOnline) {
-      await this.syncService.forceSync();
+      await this.todoManagerService.syncData()
       this.loadTodos();
     }
   }

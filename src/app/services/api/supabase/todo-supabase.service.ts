@@ -1,7 +1,5 @@
 import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { environment } from '../environments/environment.prod';
-import { TodoItemComponent } from '../components/todo-item/todo-item/todo-item.component';
+import { SupabaseService } from '../../supabase.service';
 
 export interface SupabaseTodo {
   id?: number;
@@ -15,19 +13,14 @@ export interface SupabaseTodo {
 @Injectable({
   providedIn: 'root'
 })
-export class SupabaseService {
-  supabaseConnection: SupabaseClient;
+export class TodoSupabaseService {
 
-  constructor() {
-    this.supabaseConnection = createClient(
-      environment.supabaseUrl,
-      environment.supabaseKey
-    );
-  }
+  constructor(
+    private supabaseService:SupabaseService
+  ) { }
 
-  // Obtener todos los todos
-  async getTodos(): Promise<SupabaseTodo[]> {
-    const { data, error } = await this.supabaseConnection
+  async getAll(){
+    const { data, error } = await this.supabaseService.supabaseConnection
       .from('todos')
       .select('*')
       .order('created_at', { ascending: false });
@@ -39,16 +32,12 @@ export class SupabaseService {
     return data || [];
   }
 
-  // Crear nuevo todo
-  async createTodo(todo: Omit<SupabaseTodo, 'id'>): Promise<SupabaseTodo> {
-    console.log("hey estoycreando", TodoItemComponent)
-    const { data, error } = await this.supabaseConnection
+  async create(todo : SupabaseTodo){
+    const { data, error } = await this.supabaseService.supabaseConnection
       .from('todos')
       .insert([todo])
       .select()
       .single();
-
-    console.log('heu ya cree ')
 
     if (error) {
       console.error('Supabase error:', error);
@@ -57,9 +46,8 @@ export class SupabaseService {
     return data;
   }
 
-  // Actualizar todo
-  async updateTodo(id: number, updates: Partial<SupabaseTodo>): Promise<SupabaseTodo> {
-    const { data, error } = await this.supabaseConnection
+  async update(id:number, updates: Partial<SupabaseTodo>){
+    const { data, error } = await this.supabaseService.supabaseConnection
       .from('todos')
       .update(updates)
       .eq('id', id)
@@ -73,9 +61,8 @@ export class SupabaseService {
     return data;
   }
 
-  // Eliminar todo
-  async deleteTodo(id: number): Promise<void> {
-    const { error } = await this.supabaseConnection
+  async delete(id:number){
+    const { error } = await this.supabaseService.supabaseConnection
       .from('todos')
       .delete()
       .eq('id', id);
@@ -88,7 +75,7 @@ export class SupabaseService {
 
   // Suscribirse a cambios en tiempo real (opcional)
   subscribeToTodos(callback: (payload: any) => void) {
-    return this.supabaseConnection
+    return this.supabaseService.supabaseConnection
       .channel('todos-changes')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'todos' },

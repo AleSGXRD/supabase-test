@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { SyncService } from './sync.service';
+import { TodoSupabaseService } from './todo-supabase.service';
 
-describe('SyncService', () => {
-  let service: SyncService;
+describe('TodoSupabaseService', () => {
+  let service: TodoSupabaseService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(SyncService);
+    service = TestBed.inject(TodoSupabaseService);
   });
 
   it('should be created', () => {
