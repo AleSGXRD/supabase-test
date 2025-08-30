@@ -18,18 +18,16 @@ export class TodoManagerService {
     private todoSupabaseService: TodoSupabaseService,
     private todoDexieService: TodoDexieService
   ) {
-    console.log("OnInit TodoManager")
     this.connectionService.isOnline$.subscribe({
       next: (value)=>{
         this.isConnected$.next(value);
-        console.log(this.isConnected$.value)
-        this.syncData()
       },
       error : (err)=>{
         console.error(err);
       }
     })
   }
+
   async getAll(){
     const todos = await this.todoDexieService.getAll();
 
@@ -41,7 +39,7 @@ export class TodoManagerService {
 
     if(created){
       if(this.isConnected$.value == true){
-        const supabaseCreated = await this.todoSupabaseService.create(created);
+        const supabaseCreated = await this.todoSupabaseService.create(this.localToSupabase(created));
 
         return supabaseCreated
       }
@@ -57,10 +55,13 @@ export class TodoManagerService {
     if(updated){
       if(this.isConnected$.value == true){
         const supabaseUpdated = await this.todoSupabaseService.update(id, this.localToSupabase(updated))
+        await this.markAsSynced(id, true)
 
         return supabaseUpdated
       }
       else{
+        await this.markAsSynced(id, false)
+
         return updated
       }
     }
@@ -73,6 +74,11 @@ export class TodoManagerService {
       await this.todoSupabaseService.delete(id);
     }
   }
+
+  async markAsSynced(id:number, synced:boolean){
+    await this.todoDexieService.update(id, { synced : synced })
+  }
+
   private localToSupabase(todo: Todo): Omit<SupabaseTodo, 'id'> {
     return {
       title: todo.title,
@@ -81,6 +87,16 @@ export class TodoManagerService {
       updated_at: todo.updatedAt.toISOString()
     };
   }
+
+  private SupabaseToLocal(todo: SupabaseTodo): Omit<Todo, 'id'> {
+    return {
+      title: todo.title,
+      completed: todo.completed,
+      createdAt: todo.created_at ? new Date(todo.created_at) : new Date(),
+      updatedAt: todo.updated_at ? new Date(todo.updated_at) : new Date()
+    };
+  }
+
   async syncData(){
     console.log(this.isConnected$.value);
     if(this.isConnected$.value == false) return;
@@ -96,13 +112,13 @@ export class TodoManagerService {
       if(!todoFound){
         console.log("Va a vincularse")
         const created = await this.todoSupabaseService.create(this.localToSupabase(todo))
-        const synced = await this.todoDexieService.update(todo.id, {synced : true})
-        console.log(created, " Es vinculado a supabase", "y se ha modificaddo el local en :", synced)
+        await this.markAsSynced(todo.id, true)
+        console.log(created, " Es vinculado a supabase", "y se ha modificaddo el local en")
       }else{
         await this.todoSupabaseService.update(todo.id,this.localToSupabase(todo))
 
         if(todo.synced == false){
-          await this.todoDexieService.update(todo.id, {synced : true})
+          await this.markAsSynced(todo.id, true)
         }
       }
     }
@@ -115,12 +131,14 @@ export class TodoManagerService {
       if(!todoFound){
         const created = await this.todoDexieService.create(todo)
         if(created && created.id){
-          const synced = await this.todoDexieService.update(created.id, {synced:true})
-          console.log("Se vinculo desde supabase a la local este nuevo dato", created, "y se le actualizo el syncronizado y quedo asi", synced)
+          await this.markAsSynced(created.id, true)
         }
       }
       else{
-        const updated = await this.todoDexieService.update(todo.id, todo);
+        const todoLocal = this.SupabaseToLocal(todo)
+        if(todoFound.updatedAt.getTime() < todoLocal.updatedAt.getTime()){
+          await this.todoDexieService.update(todo.id, todo);
+        }
       }
     }
 
